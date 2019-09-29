@@ -1,0 +1,24 @@
+---
+title: "Capstone - EDA"
+author: "Jared Allen"
+date: "29/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Capstone EDA
+
+```{r dataimport}
+con <- file("Data/final/en_US/en_US.twitter.txt", "r") 
+#readLines(con, 1) ## Read the first line of text 
+#readLines(con, 1) ## Read the next line of text 
+#readLines(con, 5) ## Read in the next 5 lines of text 
+
+en_US_twitter <- readLines(con)
+close(con) ## It's important to close the connection when you are done
+
+```
