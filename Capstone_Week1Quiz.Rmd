@@ -1,0 +1,76 @@
+---
+title: "Capstone - Week1Quiz"
+author: "Jared Allen"
+date: "29/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Capstone EDA
+
+```{r dataimport}
+con <- file("Data/final/en_US/en_US.twitter.txt", "r") 
+#readLines(con, 1) ## Read the first line of text 
+#readLines(con, 1) ## Read the next line of text 
+#readLines(con, 5) ## Read in the next 5 lines of text 
+
+en_US_twitter <- readLines(con)
+close(con) ## It's important to close the connection when you are done
+
+```
+
+```{r week1quiz_Q1}
+# The \verb| en_US.blogs.txt |en_US.blogs.txt file is how many megabytes?
+
+file.size("Data/final/en_US/en_US.blogs.txt") / 1024^2
+
+```
+
+```{r week1quiz_Q2}
+# The \verb|en_US.twitter.txt|en_US.twitter.txt has how many lines of text?
+
+length(en_US_twitter)
+```
+
+```{r week1quiz_Q3A}
+# What is the length of the longest line seen in any of the three en_US data sets?
+
+con<- file("Data/final/en_US/en_US.blogs.txt","r")
+en_us_blogs <- readLines(con)
+close(con)
+
+con<- file("Data/final/en_US/en_US.news.txt","r")
+en_us_news <- readLines(con)
+close(con)
+
+```
+
+```{r week1quiz_Q3A}
+
+max(nchar(en_us_blogs))
+max(nchar(en_us_news))
+
+```
+
+```{r week1quiz_Q4}
+
+length(grep("love", en_US_twitter)) / 
+  length(grep("hate", en_US_twitter))
+
+```
+
+```{r week1quiz_Q5}
+
+en_US_twitter[grep("biostats", en_US_twitter)]
+
+```
+
+```{r week1quiz_Q6}
+
+length(grep("A computer once beat me at chess, but it was no match for me at kickboxing", en_US_twitter))
+
+```

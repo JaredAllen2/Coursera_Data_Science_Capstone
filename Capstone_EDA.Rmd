@@ -1,24 +1,59 @@
 ---
-title: "Capstone - EDA"
+title: "Capstone EDA"
 author: "Jared Allen"
-date: "29/09/2019"
+date: "30/09/2019"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
+library(tidytext)
 ```
 
-## Capstone EDA
+## Data Import
 
-```{r dataimport}
-con <- file("Data/final/en_US/en_US.twitter.txt", "r") 
-#readLines(con, 1) ## Read the first line of text 
-#readLines(con, 1) ## Read the next line of text 
-#readLines(con, 5) ## Read in the next 5 lines of text 
+Data import has been accomplished through the use of the readLines function in R, storing the data in tibble format to adhere to tidy data principles.
 
-en_US_twitter <- readLines(con)
-close(con) ## It's important to close the connection when you are done
+```{r data_import, warning=FALSE, echo=TRUE}
+
+con<- file("Data/final/en_US/en_US.twitter.txt","r")
+en_us_twitter <- readLines(con)
+en_us_twitter <- tibble(en_us_twitter)
+close(con)
+
+con<- file("Data/final/en_US/en_US.blogs.txt","r")
+en_us_blogs <- readLines(con)
+en_us_blogs <- tibble(en_us_blogs)
+close(con)
+
+con<- file("Data/final/en_US/en_US.news.txt","r")
+en_us_news <- readLines(con)
+en_us_news <- tibble(en_us_news)
+close(con)
+```
+
+```{r data_summary}
+summary(en_us_twitter)
+summary(en_us_blogs)
+summary(en_us_news)
 
 ```
+
+```{r restructure_trigrams}
+
+en_us_twitter_tidy_trigrams <-
+  en_us_twitter %>%
+  unnest_tokens(trigram,en_us_twitter,token = "ngrams",n=3)
+
+```
+
+```{r counts}
+
+en_us_twitter_tidy_trigrams %>%
+  count(trigram,sort=TRUE)
+
+```
+
+## EDA
+
