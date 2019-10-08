@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(tidytext)
+library(quanteda)
 ```
 
 ## Data Import
@@ -56,4 +57,5 @@ en_us_twitter_tidy_trigrams %>%
 ```
 
 ## EDA
+
 
