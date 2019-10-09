@@ -57,5 +57,19 @@ en_us_twitter_tidy_trigrams %>%
 ```
 
 ## EDA
+```{r quanteda test}
+library(readtext)
+QE_en_us_twitter <- corpus(readtext("Data/final/en_US/en_US.twitter.txt"))
+QE_en_us_blogs <- corpus(readtext("Data/final/en_US/en_US.blogs.txt"))
+QE_en_us_news <- corpus(readtext("Data/final/en_US/en_US.news.txt"))
 
+QE_all <- QE_en_us_twitter + QE_en_us_blogs + QE_en_us_news
+```
 
+```{r tokenize}
+
+qedadfm <- dfm(QE_all)
+
+textplot_wordcloud(qedadfm)
+
+```
