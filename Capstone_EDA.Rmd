@@ -52,6 +52,14 @@ summary(en_us_news)
 
 ```{r restructure_trigrams}
 
+en_us_twitter_tidy_unigrams <-
+  en_us_twitter %>%
+  unnest_tokens(unigram,en_us_twitter,token = "ngrams",n=1)
+
+en_us_twitter_tidy_bigrams <-
+  en_us_twitter %>%
+  unnest_tokens(bigram,en_us_twitter,token = "ngrams",n=2)
+
 en_us_twitter_tidy_trigrams <-
   en_us_twitter %>%
   unnest_tokens(trigram,en_us_twitter,token = "ngrams",n=3)
@@ -59,6 +67,11 @@ en_us_twitter_tidy_trigrams <-
 ```
 
 ```{r counts}
+en_us_twitter_tidy_unigrams %>%
+  count(unigram,sort=TRUE)
+
+en_us_twitter_tidy_bigrams %>%
+  count(bigram,sort=TRUE)
 
 en_us_twitter_tidy_trigrams %>%
   count(trigram,sort=TRUE)
