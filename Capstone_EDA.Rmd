@@ -50,6 +50,7 @@ summary(en_us_news)
 
 ```
 
+
 ```{r restructure_trigrams}
 
 en_us_twitter_tidy_unigrams <-
@@ -78,6 +79,7 @@ en_us_twitter_tidy_trigrams %>%
 
 ```
 
+
 ## EDA
 ```{r quanteda test}
 library(readtext)
@@ -88,12 +90,76 @@ QE_en_us_news <- corpus(readtext("Data/final/en_US/en_US.news.txt"))
 QE_all <- QE_en_us_twitter + QE_en_us_blogs + QE_en_us_news
 ```
 
+```{r textcleaning}
+doc.tokens <- tokens(QE_all, 
+                     remove_punct = TRUE, 
+                     remove_numbers = TRUE)
+doc.tokens <- tokens_select(doc.tokens, stopwords('english'),selection='remove')
+
+doc.dfm.final <- dfm(doc.tokens)
+
+```
 Questions to consider
 
 Some words are more frequent than others - what are the distributions of word frequencies?
 
-What are the frequencies of 2-grams and 3-grams in the dataset?
+```{r ngram formation}
+tokens_bigram <- tokens_ngrams(doc.tokens, n = 2)
+doc.dfm.bigrams <- dfm(tokens_bigram)
 
+tokens_trigram <- tokens_ngrams(doc.tokens, n = 3)
+doc.dfm.trigrams <- dfm(tokens_trigram)
+
+```
+
+```{r ngram_freq}
+doc.dfm.final %>% 
+  textstat_frequency(n = 15) %>% 
+  ggplot(aes(x = reorder(feature, frequency), y = frequency)) +
+  geom_point() +
+  coord_flip() +
+  labs(x = NULL, y = "Frequency") +
+  theme_minimal()
+```
+
+```{r}
+# plot relative frequencies by group
+dfmat3 <- QE_all %>% 
+    dfm(remove = stopwords("english"), remove_punct = TRUE, remove_numbers = TRUE) %>% 
+    dfm_group(groups = "Source")
+
+# calculate relative frequency by president
+tstat <- textstat_frequency(dfmat3, n = 10, groups = "Source")
+
+ggplot(data = tstat, aes(x = factor(nrow(tstat):1), y = frequency)) +
+    geom_point() +
+    facet_wrap(~ group, scales = "free") +
+    coord_flip() +
+    scale_x_discrete(breaks = nrow(tstat):1,
+                       labels = tstat$feature) +
+    labs(x = NULL, y = "Relative frequency")
+```
+
+What are the frequencies of 2-grams and 3-grams in the dataset?
+```{r ngram_freq}
+doc.dfm.final %>% 
+  textstat_frequency(n = 15) %>% 
+  ggplot(aes(x = reorder(feature, frequency), y = frequency)) +
+  geom_point() +
+  coord_flip() +
+  labs(x = NULL, y = "Frequency") +
+  theme_minimal()
+```
+
+```{r ngram_freq}
+doc.dfm.final %>% 
+  textstat_frequency(n = 15) %>% 
+  ggplot(aes(x = reorder(feature, frequency), y = frequency)) +
+  geom_point() +
+  coord_flip() +
+  labs(x = NULL, y = "Frequency") +
+  theme_minimal()
+```
 How many unique words do you need in a frequency sorted dictionary to cover 50% of all word instances in the language? 90%?
 
 How do you evaluate how many of the words come from foreign languages?
