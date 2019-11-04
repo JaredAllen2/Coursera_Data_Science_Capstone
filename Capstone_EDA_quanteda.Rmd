@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(tidytext)
+library(stringi)
 library(stringr)
 library(tm)
 library(quanteda)
@@ -36,16 +37,29 @@ QE_all <- QE_en_us_twitter + QE_en_us_blogs + QE_en_us_news
 summary(QE_all)
 ```
 
-
 ```{r textcleaning}
 doc.tokens <- tokens(QE_all, 
                      remove_punct = TRUE, 
-                     remove_numbers = TRUE)
-doc.tokens <- tokens_select(doc.tokens, stopwords('english'),selection='remove')
+                     remove_numbers = TRUE,
+                     remove_symbols = TRUE)
+#doc.tokens <- tokens_select(doc.tokens, stopwords('english'),selection='remove')
 
 doc.dfm.final <- dfm(doc.tokens)
 
 ```
+
+```{r topfeatures}
+topfeatures(doc.dfm.final, 20)
+
+```
+
+```{r topfeatures_nostopwords}
+doc.dfm.clean <- dfm(doc.tokens, remove = stopwords("english"))
+
+topfeatures(doc.dfm.clean, 20)
+
+```
+
 Questions to consider
 
 Some words are more frequent than others - what are the distributions of word frequencies?
