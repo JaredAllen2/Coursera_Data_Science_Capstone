@@ -25,7 +25,7 @@ Understand frequencies of words and word pairs - build figures and tables to und
 
 ## Data Import
 
-Data import has been accomplished through the use of the readLines function in R, storing the data in tibble format to adhere to tidy data principles.
+Data import has been accomplished through the use of the readLines function in R, storing the data in tibble format to adhere to tidy data principles. The three datafiles to be explored in this analysis consist of data from twitter, data from blogposts, and data from news sites.
 
 ```{r data_import, warning=FALSE, echo=TRUE}
 
@@ -51,33 +51,65 @@ summary(en_us_blogs)
 summary(en_us_news)
 
 ```
+The large amount of data (`r nrows(en_us_blogs)` rows in the blog data, `r nrows(en_us_news)` in the news data, and `r nrows(en_us_twitter)` rows in the twitter data) makes exploratory analysis if the entire dataset reseource intensive. For this reason, a randomly selected subset consisting of 10% of each of the datasets will be used to characterise the data prior to analysis.
 
-The dataset consists of three files containing the following:
+```{r data_subset}
+set.seed(061119)
+en_us_blog_subset <- data.frame(data=sample(en_us_blogs$en_us_blogs,(ceiling(nrow(en_us_blogs)*0.05))),stringsAsFactors = FALSE)
+en_us_news_subset <- data.frame(data=sample(en_us_news$en_us_news,(ceiling(nrow(en_us_news)*0.05))),stringsAsFactors = FALSE)
+en_us_twitter_subset <- data.frame(data=sample(en_us_twitter$en_us_twitter,(ceiling(nrow(en_us_twitter)*0.05))),stringsAsFactors = FALSE)
 
-```{r restructure_trigrams}
-en_us_twitter_tidy_unigrams <-
-  en_us_twitter %>%
-  unnest_tokens(unigram,en_us_twitter,token = "ngrams",n=1)
+en_us_capstone_subset <- 
+  data.frame(en_us_blog_subset) %>%
+  mutate(source=as.character("blog")) %>%
+  bind_rows(data.frame(en_us_news_subset)) %>%
+  mutate(source=ifelse(is.na(source),as.character("news"),source)) %>%
+  bind_rows(data.frame(en_us_twitter_subset)) %>%
+  mutate(source=ifelse(is.na(source),as.character("twitter"),source))
+  
+```
 
-en_us_twitter_tidy_bigrams <-
-  en_us_twitter %>%
-  unnest_tokens(bigram,en_us_twitter,token = "ngrams",n=2)
 
-en_us_twitter_tidy_trigrams <-
-  en_us_twitter %>%
-  unnest_tokens(trigram,en_us_twitter,token = "ngrams",n=3)
+As the project aims to predict the next word based on prior entries, stop words will need to be retained in the final model in order to maintain grammatical order. However their high weighting necessitates their removal from this exploratory analysis, along with punctuation, numbers and symbols, which are removed using the unnest_tokens function.
+
+Preliminray examination of the blog dataset showed that at some point, apostrophes had been converted into the symbol "â" followed by a space in the dataset. These will be removed via a str_replace prior to further analysis.
+
+```{r data_clean}
+
+en_us_capstone_subset$data <- str_replace(en_us_capstone_subset$data,"â ","'")
+
+en_us_capstone_subset_clean <- #need to remove stopwords after unnest - https://www.tidytextmining.com/ngrams.html#counting-and-filtering-n-grams
+  en_us_capstone_subset %>%
+  filter(!data %in% stop_words$word)
+
+```
+
+```{r restructure_ngrams}
+en_us_capstone_subset_tidy_unigrams <-
+  en_us_capstone_subset_clean %>%
+  unnest_tokens(unigram,data,token = "ngrams",n=1)
+
+en_us_capstone_subset_tidy_bigrams <-
+  en_us_capstone_subset_clean %>%
+  unnest_tokens(bigram,data,token = "ngrams",n=2)
+
+en_us_capstone_subset_tidy_trigrams <-
+  en_us_capstone_subset_clean %>%
+  unnest_tokens(trigram,data,token = "ngrams",n=3)
 
 ```
 
 ```{r counts}
-en_us_twitter_tidy_unigrams %>%
+en_us_capstone_subset_tidy_unigrams %>%
   count(unigram,sort=TRUE)
 
-en_us_twitter_tidy_bigrams %>%
+en_us_capstone_subset_tidy_bigrams %>%
   count(bigram,sort=TRUE)
 
-en_us_twitter_tidy_trigrams %>%
+en_us_capstone_subset_tidy_trigrams %>%
   count(trigram,sort=TRUE)
 
 ```
+
+
 
