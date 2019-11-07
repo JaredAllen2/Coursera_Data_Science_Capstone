@@ -1,7 +1,7 @@
 ---
 title: "Capstone EDA"
 author: "Jared Allen"
-date: "30/09/2019"
+date: "07/11/2019"
 output: html_document
 ---
 
@@ -12,6 +12,7 @@ library(tidytext)
 library(stringr)
 library(tm)
 library(quanteda)
+library(knitr)
 ```
 
 ## Introduction
@@ -45,13 +46,34 @@ en_us_news <- tibble(en_us_news)
 close(con)
 ```
 
-```{r data_summary}
-summary(en_us_twitter)
-summary(en_us_blogs)
-summary(en_us_news)
+```{r data_summary, eval=FALSE}
+kable(summary(en_us_twitter))
+kable(summary(en_us_blogs))
+kable(summary(en_us_news))
 
 ```
-The large amount of data (`r nrows(en_us_blogs)` rows in the blog data, `r nrows(en_us_news)` in the news data, and `r nrows(en_us_twitter)` rows in the twitter data) makes exploratory analysis if the entire dataset reseource intensive. For this reason, a randomly selected subset consisting of 10% of each of the datasets will be used to characterise the data prior to analysis.
+
+```{r summarytables_alldata}
+tidy_en_us_blogs <- en_us_blogs %>% unnest_tokens(en_us_blogs,en_us_blogs,token="words",format="text")
+tidy_en_us_news <- en_us_news %>% unnest_tokens(en_us_news,en_us_news,token="words",format="text")
+tidy_en_us_twitter <- en_us_twitter %>% unnest_tokens(en_us_twitter,en_us_twitter,token="words",format="text")
+```
+
+```{r}
+summarytable <- 
+  tibble(source=list("blogs","news","twitter"),
+                       lines=list(nrow(en_us_blogs),nrow(en_us_news),nrow(en_us_twitter)),
+                       tokens=list(nrow(tidy_en_us_blogs),nrow(tidy_en_us_news),nrow(tidy_en_us_twitter))) %>%
+  mutate(tokens_per_line=(as.double(tokens)/as.double(lines)))
+
+kable(summarytable)
+
+```
+
+
+An initial look at the data shows that each of the data sets has a large quantity of data, with twitter messages tending to be very short, with an average of 12.8 words per entry, while news and blog articles have 34.8 and 42.4 words per entry respectively.
+
+The large amount of data (`r nrow(en_us_blogs)` rows in the blog data, `r nrow(en_us_news)` in the news data, and `r nrow(en_us_twitter)` rows in the twitter data) makes exploratory analysis of the entire dataset resource intensive. For this reason, a randomly selected subset consisting of 5% of each of the datasets will be used to characterise the data prior to analysis.
 
 ```{r data_subset}
 set.seed(061119)
@@ -69,47 +91,188 @@ en_us_capstone_subset <-
   
 ```
 
-
-As the project aims to predict the next word based on prior entries, stop words will need to be retained in the final model in order to maintain grammatical order. However their high weighting necessitates their removal from this exploratory analysis, along with punctuation, numbers and symbols, which are removed using the unnest_tokens function.
-
-Preliminray examination of the blog dataset showed that at some point, apostrophes had been converted into the symbol "â" followed by a space in the dataset. These will be removed via a str_replace prior to further analysis.
+Preliminary examination of the blog dataset showed that at some point, apostrophes had been converted into the symbol "â" followed by a space in the dataset. These will be removed via a str_remove prior to further analysis. tidytext techniques have then been used to unnest the data into unigram, bigram, and trigram datets. The most prevalent words for each n-gram are shown here:
 
 ```{r data_clean}
-
-en_us_capstone_subset$data <- str_replace(en_us_capstone_subset$data,"â ","'")
-
-en_us_capstone_subset_clean <- #need to remove stopwords after unnest - https://www.tidytextmining.com/ngrams.html#counting-and-filtering-n-grams
-  en_us_capstone_subset %>%
-  filter(!data %in% stop_words$word)
+en_us_capstone_subset$data <- 
+  str_remove_all(en_us_capstone_subset$data,"â")
 
 ```
 
 ```{r restructure_ngrams}
 en_us_capstone_subset_tidy_unigrams <-
-  en_us_capstone_subset_clean %>%
-  unnest_tokens(unigram,data,token = "ngrams",n=1)
+  en_us_capstone_subset %>%
+  unnest_tokens(unigram,data,token = "ngrams",n=1, collapse=FALSE)
 
 en_us_capstone_subset_tidy_bigrams <-
-  en_us_capstone_subset_clean %>%
-  unnest_tokens(bigram,data,token = "ngrams",n=2)
+  en_us_capstone_subset %>%
+  unnest_tokens(bigram,data,token = "ngrams",n=2, collapse=FALSE)
 
 en_us_capstone_subset_tidy_trigrams <-
-  en_us_capstone_subset_clean %>%
-  unnest_tokens(trigram,data,token = "ngrams",n=3)
+  en_us_capstone_subset %>%
+  unnest_tokens(trigram,data,token = "ngrams",n=3, collapse=FALSE)
 
 ```
 
-```{r counts}
-en_us_capstone_subset_tidy_unigrams %>%
-  count(unigram,sort=TRUE)
+```{r counts, message=FALSE}
 
-en_us_capstone_subset_tidy_bigrams %>%
-  count(bigram,sort=TRUE)
+kable(en_us_capstone_subset_tidy_unigrams %>%
+  count(unigram,sort=TRUE) %>%
+  top_n(10))
 
-en_us_capstone_subset_tidy_trigrams %>%
-  count(trigram,sort=TRUE)
+kable(en_us_capstone_subset_tidy_bigrams %>%
+  count(bigram,sort=TRUE) %>%
+  top_n(10))
+
+kable(en_us_capstone_subset_tidy_trigrams %>%
+  count(trigram,sort=TRUE) %>%
+  top_n(10))
 
 ```
 
+As the project aims to predict the next word based on prior entries, stop words will need to be retained in the final model in order to maintain grammatical order. However their high weighting necessitates their removal from this exploratory analysis, along with punctuation, numbers and symbols, which were removed using the unnest_tokens function.
 
+```{r clean_ngrams}
+data("stop_words")
+emoji_words = c("ðÿ","ð","î","ðµð","ñƒ","â")
+
+en_us_capstone_subset_tidy_unigrams_clean <-
+  en_us_capstone_subset_tidy_unigrams %>%
+  filter(!unigram %in% c(stop_words$word,emoji_words)) %>%
+  filter(!grepl("\\b\\d+\\b",unigram)) %>%
+  filter(is.na(unigram)==FALSE)
+
+en_us_capstone_subset_tidy_bigrams_clean <- 
+  en_us_capstone_subset_tidy_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% c(stop_words$word,emoji_words)) %>%
+  filter(!word2 %in% c(stop_words$word,emoji_words)) %>%
+  filter(!grepl("\\b\\d+\\b",word1)) %>%
+  filter(!grepl("\\b\\d+\\b",word2)) %>%
+  filter(is.na(word1)==FALSE & is.na(word2)==FALSE) %>%
+  mutate(bigram=paste(word1,word2))
+
+en_us_capstone_subset_tidy_trigrams_clean <- 
+  en_us_capstone_subset_tidy_trigrams %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+  filter(!word1 %in% c(stop_words$word,emoji_words)) %>%
+  filter(!word2 %in% c(stop_words$word,emoji_words)) %>%
+  filter(!word3 %in% c(stop_words$word,emoji_words)) %>%
+  filter(!grepl("\\b\\d+\\b",word1)) %>%
+  filter(!grepl("\\b\\d+\\b",word2)) %>%
+  filter(!grepl("\\b\\d+\\b",word3)) %>%
+  filter(is.na(word1)==FALSE & is.na(word2)==FALSE & is.na(word3)==FALSE) %>%
+  mutate(trigram=paste(word1,word2,word3))
+
+```
+
+This then allows counts of the clean n grams with stop words removed:
+
+```{r counts_clean}
+kable(en_us_capstone_subset_tidy_unigrams_clean %>%
+  count(unigram,sort=TRUE) %>%
+  top_n(10))
+
+kable(en_us_capstone_subset_tidy_bigrams_clean %>%
+  count(bigram,sort=TRUE) %>%
+  top_n(10))
+
+kable(en_us_capstone_subset_tidy_trigrams_clean %>%
+  count(trigram,sort=TRUE) %>%
+  top_n(10))
+```
+
+To examine differences between the data sources, the frequency of n grams by source is calculated:
+
+```{r frequency_by_source_unigrams,include=FALSE}
+en_us_capstone_subset_tidy_unigrams_clean_freq <-
+  en_us_capstone_subset_tidy_unigrams_clean %>%
+  group_by(source,unigram) %>%
+  summarise(n=n()) %>%
+  mutate(sourcefreq = n/sum(n)) %>%
+  arrange(desc(sourcefreq))
+
+kable(head(en_us_capstone_subset_tidy_unigrams_clean_freq[en_us_capstone_subset_tidy_unigrams_clean_freq$source=="blog",],10))
+kable(head(en_us_capstone_subset_tidy_unigrams_clean_freq[en_us_capstone_subset_tidy_unigrams_clean_freq$source=="news",],10))
+kable(head(en_us_capstone_subset_tidy_unigrams_clean_freq[en_us_capstone_subset_tidy_unigrams_clean_freq$source=="twitter",],10))
+
+```
+
+```{r frequency_by_source_bigrams,include=FALSE}
+en_us_capstone_subset_tidy_bigrams_clean_freq <-
+  en_us_capstone_subset_tidy_bigrams_clean %>%
+  group_by(source,bigram) %>%
+  summarise(n=n()) %>%
+  mutate(sourcefreq = n/sum(n)) %>%
+  arrange(desc(sourcefreq))
+
+kable(head(en_us_capstone_subset_tidy_bigrams_clean_freq[en_us_capstone_subset_tidy_bigrams_clean_freq$source=="blog",],10))
+kable(head(en_us_capstone_subset_tidy_bigrams_clean_freq[en_us_capstone_subset_tidy_bigrams_clean_freq$source=="news",],10))
+kable(head(en_us_capstone_subset_tidy_bigrams_clean_freq[en_us_capstone_subset_tidy_bigrams_clean_freq$source=="twitter",],10))
+```
+
+```{r frequency_by_source_trigrams,include=FALSE}
+en_us_capstone_subset_tidy_trigrams_clean_freq <-
+  en_us_capstone_subset_tidy_trigrams_clean %>%
+  group_by(source,trigram) %>%
+  summarise(n=n()) %>%
+  mutate(sourcefreq = n/sum(n)) %>%
+  arrange(desc(sourcefreq))
+
+kable(head(en_us_capstone_subset_tidy_trigrams_clean_freq[en_us_capstone_subset_tidy_trigrams_clean_freq$source=="blog",],10))
+kable(head(en_us_capstone_subset_tidy_trigrams_clean_freq[en_us_capstone_subset_tidy_trigrams_clean_freq$source=="news",],10))
+kable(head(en_us_capstone_subset_tidy_trigrams_clean_freq[en_us_capstone_subset_tidy_trigrams_clean_freq$source=="twitter",],10))
+```
+
+Examination of the top n-grams for each data source reveals some interesting differences between the texts. While unigram data shows similar single word usage between the three sources, with "time", "day", and "people" showing up as having high relative frequencies in all three of the sets.
+
+```{r unigram_plot, message=FALSE}
+en_us_capstone_subset_tidy_unigrams_clean_freq %>%
+  group_by(source) %>%
+  arrange(desc(sourcefreq)) %>%
+  top_n(10) %>%
+  ggplot(aes(x = reorder(unigram,sourcefreq,sum), y = sourcefreq, fill=source)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(y = "Relative n-gram frequency",
+      x = "Unigrams",
+      title = "Relative frequencies of n-gram by source")
+
+```
+
+Examination of bigram and trigram data starts to give information about how the different sources are used. Exploration of the bigrams shows "happy birthday", "mother's day", "happy hour", and "merry christmas" having a high weighting in the twitter dataset, being evidence of this channel being used heavily for short celebratory messages or advertising, news data shows a high prevalence of place names in the bigram data, and blogs show the bigrams "social media", "weeks ago", "months ago", and "real life", suggesting these are predominantly a media which relays experiential data. 
+
+```{r bigram_plot, message=FALSE}
+en_us_capstone_subset_tidy_bigrams_clean_freq %>%
+  group_by(source) %>%
+  arrange(desc(sourcefreq)) %>%
+  top_n(10) %>%
+  ggplot(aes(x = reorder(bigram,sourcefreq,sum), y = sourcefreq, fill=source)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(y = "Relative n-gram frequency",
+      x = "Bigrams",
+      title = "Relative frequencies of n-gram by source")
+
+```
+
+Finally the trigram data again shows a high weighting for holidays in the twitter data, with "happy mothers day", "cinco de mayo", and "st patrick's day" having high relative prevalence, news data shows a proclivity towards real names in the trigrams, such as "st louis county", and "gov chris christie". At the trigram level, the blog data is heavily skewed towards advertisements, with amazon website lists showing a high relative frequency. At the trigram level the twitter data also reveals a trend in tweets for nonsense tweets with words or phrases being repeated a high number of times, such as "sex sex sex" and "matt hunter matt", a predictive model will need to filter out such data to prevent it from skewing predictions. 
+
+```{r trigram_plot, message=FALSE}
+en_us_capstone_subset_tidy_trigrams_clean_freq %>%
+  group_by(source) %>%
+  arrange(desc(sourcefreq)) %>%
+  top_n(10) %>%
+  ggplot(aes(x = reorder(trigram,sourcefreq,sum), y = sourcefreq, fill=source)) +
+  geom_col() +
+  #facet_wrap(.~source, scales = "free") +  
+  xlab(NULL) +
+  coord_flip() +
+      labs(y = "Relative n-gram frequency",
+      x = "Trigrams",
+      title = "Relative frequencies of n-gram by source")
+
+```
 
