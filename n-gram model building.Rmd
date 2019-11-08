@@ -67,8 +67,8 @@ unigrams <-
   filter(wordcount(data)>=1) %>%
   ngram(data,n=1)
 
-#bigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
-#trigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
+# bigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
+# trigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
 
 #tidy_en_us_capstone_subset <- 
 #  tidy_en_us_capstone_subset %>%
