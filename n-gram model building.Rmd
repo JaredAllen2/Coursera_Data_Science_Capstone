@@ -1,0 +1,80 @@
+---
+title: "n-gram prediction model"
+author: "Jared Allen"
+date: "08/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(knitr)
+library(ngram)
+```
+
+```{r data_import, warning=FALSE, echo=TRUE}
+
+con<- file("Data/final/en_US/en_US.twitter.txt","r")
+en_us_twitter <- readLines(con)
+en_us_twitter <- tibble(en_us_twitter)
+close(con)
+
+con<- file("Data/final/en_US/en_US.blogs.txt","r")
+en_us_blogs <- readLines(con)
+en_us_blogs <- tibble(en_us_blogs)
+close(con)
+
+con<- file("Data/final/en_US/en_US.news.txt","r")
+en_us_news <- readLines(con)
+en_us_news <- tibble(en_us_news)
+close(con)
+```
+
+```{r data_subset}
+set.seed(061119)
+en_us_blog_subset <- data.frame(data=sample(en_us_blogs$en_us_blogs,(ceiling(nrow(en_us_blogs)*0.05))),stringsAsFactors = FALSE)
+en_us_news_subset <- data.frame(data=sample(en_us_news$en_us_news,(ceiling(nrow(en_us_news)*0.05))),stringsAsFactors = FALSE)
+en_us_twitter_subset <- data.frame(data=sample(en_us_twitter$en_us_twitter,(ceiling(nrow(en_us_twitter)*0.05))),stringsAsFactors = FALSE)
+
+en_us_capstone_subset <- 
+  data.frame(en_us_blog_subset) %>%
+  mutate(source=as.character("blog")) %>%
+  bind_rows(data.frame(en_us_news_subset)) %>%
+  mutate(source=ifelse(is.na(source),as.character("news"),source)) %>%
+  bind_rows(data.frame(en_us_twitter_subset)) %>%
+  mutate(source=ifelse(is.na(source),as.character("twitter"),source))
+  
+```
+
+```{r dataset cleaning}
+
+tidy_en_us_capstone_subset <- en_us_capstone_subset
+
+tidy_en_us_capstone_subset$data <- 
+  iconv(tidy_en_us_capstone_subset$data,"latin1","ASCII",sub="")
+
+tidy_en_us_capstone_subset <-
+  unnest_tokens(tidy_en_us_capstone_subset,data,data,token="lines",format="text")
+
+```
+
+```{r ngram modelling}
+
+unigrams <- 
+  tidy_en_us_capstone_subset %>%
+  filter(wordcount(data)>=1) %>%
+  ngram(data,n=1)
+
+#bigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
+#trigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
+
+#tidy_en_us_capstone_subset <- 
+#  tidy_en_us_capstone_subset %>%
+#  group_by(source) %>%
+#  mutate(line=row_number()) %>%
+#  ungroup %>%
+#  unnest_tokens(data,data,token="words",collapse=FALSE)
+```
+
