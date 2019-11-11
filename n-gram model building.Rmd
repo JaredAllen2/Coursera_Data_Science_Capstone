@@ -12,6 +12,7 @@ library(tidytext)
 library(stringr)
 library(knitr)
 library(ngram)
+library(tm)
 ```
 
 ```{r data_import, warning=FALSE, echo=TRUE}
@@ -52,29 +53,120 @@ en_us_capstone_subset <-
 
 tidy_en_us_capstone_subset <- en_us_capstone_subset
 
-tidy_en_us_capstone_subset$data <- 
-  iconv(tidy_en_us_capstone_subset$data,"latin1","ASCII",sub="")
-
 tidy_en_us_capstone_subset <-
-  unnest_tokens(tidy_en_us_capstone_subset,data,data,token="lines",format="text")
+  unnest_tokens(tidy_en_us_capstone_subset,data,data,token="lines",format="text") %>%
+  mutate(data=iconv(tidy_en_us_capstone_subset$data,"latin1","ASCII",sub="")) %>%
+  mutate(data=str_replace_all(tidy_en_us_capstone_subset$data, "[^a-zA-Z ]", "")) %>%
+  mutate(data=str_trim(data, "both")) %>%
+  filter(data!="") %>%
+  drop_na(data)
 
 ```
 
-```{r ngram modelling}
-
-unigrams <- 
+```{r restructure_ngrams}
+en_us_capstone_subset_tidy_unigrams <-
   tidy_en_us_capstone_subset %>%
-  filter(wordcount(data)>=1) %>%
-  ngram(data,n=1)
+  unnest_tokens(word1,data,token = "ngrams",n=1, collapse=FALSE) %>%
+  drop_na(word1)
 
-# bigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
-# trigrams <- ngram(tidy_en_us_capstone_subset$data,n=2)
+en_us_capstone_subset_tidy_bigrams <-
+  tidy_en_us_capstone_subset %>%
+  unnest_tokens(bigram,data,token = "ngrams",n=2, collapse=FALSE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  drop_na(word1)
 
-#tidy_en_us_capstone_subset <- 
-#  tidy_en_us_capstone_subset %>%
-#  group_by(source) %>%
-#  mutate(line=row_number()) %>%
-#  ungroup %>%
-#  unnest_tokens(data,data,token="words",collapse=FALSE)
+en_us_capstone_subset_tidy_trigrams <-
+  tidy_en_us_capstone_subset %>%
+  unnest_tokens(trigram,data,token = "ngrams",n=3, collapse=FALSE) %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+  drop_na(word1)
+
+en_us_capstone_subset_tidy_quadgrams <-
+  tidy_en_us_capstone_subset %>%
+  unnest_tokens(quadgram,data,token = "ngrams",n=4, collapse=FALSE) %>%
+  separate(quadgram, c("word1", "word2", "word3", "word4"), sep = " ") %>%
+  drop_na(word1)
+
 ```
 
+```{r ngram_frequency}
+
+en_us_capstone_subset_tidy_unigrams_freq <-
+  en_us_capstone_subset_tidy_unigrams %>%
+  count(word1) %>%
+  filter(n>1) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  arrange(desc(relfreq)) %>%
+  mutate(cumfreq=cumsum(relfreq))
+
+en_us_capstone_subset_tidy_bigrams_freq <-
+  en_us_capstone_subset_tidy_bigrams %>%
+  count(word1,word2) %>%
+  filter(n>1) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  arrange(desc(relfreq)) %>%
+  mutate(cumfreq=cumsum(relfreq))
+
+en_us_capstone_subset_tidy_trigrams_freq <-
+  en_us_capstone_subset_tidy_trigrams %>%
+  count(word1,word2,word3) %>%
+  filter(n>1) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  arrange(desc(relfreq)) %>%
+  mutate(cumfreq=cumsum(relfreq))
+
+en_us_capstone_subset_tidy_quadgrams_freq <-
+  en_us_capstone_subset_tidy_quadgrams %>%
+  count(word1,word2,word3,word4) %>%
+  filter(n>1) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  arrange(desc(relfreq)) %>%
+  mutate(cumfreq=cumsum(relfreq))
+
+```
+
+
+```{r ngram_rel}
+
+# for each n-gram reference set, remove all but the top 3
+
+tidy_unigrams <-
+  en_us_capstone_subset_tidy_unigrams %>%
+  count(word1) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  mutate(topword=row_number(desc(n))) %>%
+  arrange(desc(relfreq)) %>%
+  mutate(relfreq = n / sum(n))
+
+tidy_bigrams <-
+  en_us_capstone_subset_tidy_bigrams %>%
+  count(word1,word2) %>%
+  filter(n>1) %>%
+  arrange(word1,desc(n)) %>%
+  group_by(word1) %>%
+  mutate(topword=row_number(desc(n))) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  filter(topword<=3)
+
+tidy_trigrams <-
+  en_us_capstone_subset_tidy_trigrams %>%
+  count(word1,word2,word3) %>%
+  filter(n>1) %>%
+  arrange(word1,word2,desc(n)) %>%
+  group_by(word1,word2) %>%
+  mutate(topword=row_number(desc(n))) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  filter(topword<=3)
+
+tidy_quadgrams <-
+  en_us_capstone_subset_tidy_quadgrams %>%
+  count(word1,word2,word3,word4) %>%
+  filter(n>1) %>%
+  arrange(word1,word2,word3,desc(n)) %>%
+  group_by(word1,word2,word3) %>%
+  mutate(topword=row_number(desc(n))) %>%
+  mutate(relfreq = n / sum(n)) %>%
+  filter(topword<=3)
+
+
+```
