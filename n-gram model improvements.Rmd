@@ -37,49 +37,33 @@ close(con)
 ```{r data_subset_dt}
 
 setnames(en_us_blogs,"en_us_blogs","data",skip_absent=TRUE)
-en_us_blogs[,data:=unnest_tokens(en_us_blogs,data,data,token="lines",format="text")]
+#en_us_blogs[,data:=unnest_tokens(en_us_blogs,data,data,token="lines",format="text")]
 en_us_blogs[,data:=iconv(data,"latin1","ASCII",sub="")]
 en_us_blogs[,data:=str_replace_all(data, "[^a-zA-Z ]", "")]
+en_us_blogs[,data:=str_trim(data, "both")]
+en_us_blogs[data!=""]
+en_us_blogs[!is.na(data)]
+en_us_blogs[lengths(strsplit(data," "))>1]
 
-#   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
-#   mutate(data=str_trim(data, "both")) %>%
-#   filter(data!="") %>%
-#   filter(lengths(strsplit(data," "))>10) %>%
-#   drop_na(data)
-# rm(en_us_blogs)
-# 
-# tidy_news <-
-#   en_us_news %>%
-#   rename(data=en_us_news) %>%
-#   unnest_tokens(data,data,token="lines",format="text") %>%
-#   mutate(data=iconv(data,"latin1","ASCII",sub="")) %>%
-#   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
-#   mutate(data=str_trim(data, "both")) %>%
-#   filter(data!="") %>%
-#   filter(lengths(strsplit(data," "))>10) %>%
-#   drop_na(data)
-# rm(en_us_news)
-# 
-# tidy_twitter <-
-#   en_us_twitter %>%
-#   rename(data=en_us_twitter) %>%
-#   unnest_tokens(data,data,token="lines",format="text") %>%
-#   mutate(data=iconv(data,"latin1","ASCII",sub="")) %>%
-#   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
-#   mutate(data=str_trim(data, "both")) %>%
-#   filter(data!="") %>%
-#   filter(lengths(strsplit(data," "))>10) %>%
-#   drop_na(data)
-# rm(en_us_twitter)
-# 
-# capstone <- 
-#    tidy_blog %>%
-#    mutate(source=as.character("blog")) %>%
-#    bind_rows(tidy_news) %>%
-#    mutate(source=ifelse(is.na(source),as.character("news"),source)) %>%
-#    bind_rows(tidy_twitter) %>%
-#    mutate(source=ifelse(is.na(source),as.character("twitter"),source))
-# rm(tidy_blog,tidy_news,tidy_twitter)  
+setnames(en_us_news,"en_us_news","data",skip_absent=TRUE)
+#en_us_news[,data:=unnest_tokens(en_us_news,data,data,token="lines",format="text")]
+en_us_news[,data:=iconv(data,"latin1","ASCII",sub="")]
+en_us_news[,data:=str_replace_all(data, "[^a-zA-Z ]", "")]
+en_us_news[,data:=str_trim(data, "both")]
+en_us_news[data!=""]
+en_us_news[!is.na(data)]
+en_us_news[lengths(strsplit(data," "))>1]
+
+setnames(en_us_twitter,"en_us_twitter","data",skip_absent=TRUE)
+#en_us_twitter[,data:=unnest_tokens(en_us_twitter,data,data,token="lines",format="text")]
+en_us_twitter[,data:=iconv(data,"latin1","ASCII",sub="")]
+en_us_twitter[,data:=str_replace_all(data, "[^a-zA-Z ]", "")]
+en_us_twitter[,data:=str_trim(data, "both")]
+en_us_twitter[data!=""]
+en_us_twitter[!is.na(data)]
+en_us_twitter[lengths(strsplit(data," "))>1]
+
+capstone <- rbindlist(list(en_us_blogs,en_us_news,en_us_twitter),use.names=TRUE, idcol=TRUE)
 
 ```
 
@@ -132,29 +116,32 @@ en_us_blogs[,data:=str_replace_all(data, "[^a-zA-Z ]", "")]
 
 ```
 
+```{r ngrams_dt}
+capstone_unigrams <- capstone[unnest_tokens(capstone,word1,data,token = "ngrams",n=1, collapse=FALSE)]
+
+```
+
 ```{r restructure_ngrams}
-capstone_unigrams <-
-  capstone %>%
-  unnest_tokens(word1,data,token = "ngrams",n=1, collapse=FALSE) %>%
-  drop_na(word1)
-
-capstone_bigrams <-
-  capstone %>%
-  unnest_tokens(bigram,data,token = "ngrams",n=2, collapse=FALSE) %>%
-  separate(bigram, c("word1", "word2"), sep = " ") %>%
-  drop_na(word1)
-
-capstone_trigrams <-
-  capstone %>%
-  unnest_tokens(trigram,data,token = "ngrams",n=3, collapse=FALSE) %>%
-  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
-  drop_na(word1)
-
-capstone_quadgrams <-
-  capstone %>%
-  unnest_tokens(quadgram,data,token = "ngrams",n=4, collapse=FALSE) %>%
-  separate(quadgram, c("word1", "word2", "word3", "word4"), sep = " ") %>%
-  drop_na(word1)
+capstone_unigrams <- unnest_tokens(capstone,word1,data,token = "ngrams",n=1, collapse=FALSE)
+#   drop_na(word1)
+# 
+# capstone_bigrams <-
+#   capstone %>%
+#   unnest_tokens(bigram,data,token = "ngrams",n=2, collapse=FALSE) %>%
+#   separate(bigram, c("word1", "word2"), sep = " ") %>%
+#   drop_na(word1)
+# 
+# capstone_trigrams <-
+#   capstone %>%
+#   unnest_tokens(trigram,data,token = "ngrams",n=3, collapse=FALSE) %>%
+#   separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+#   drop_na(word1)
+# 
+# capstone_quadgrams <-
+#   capstone %>%
+#   unnest_tokens(quadgram,data,token = "ngrams",n=4, collapse=FALSE) %>%
+#   separate(quadgram, c("word1", "word2", "word3", "word4"), sep = " ") %>%
+#   drop_na(word1)
 
 ```
 
