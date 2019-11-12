@@ -43,6 +43,7 @@ tidy_blog <-
   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
   mutate(data=str_trim(data, "both")) %>%
   filter(data!="") %>%
+  filter(lengths(strsplit(data," "))>10) %>%
   drop_na(data)
 rm(en_us_blogs)
 
@@ -54,6 +55,7 @@ tidy_news <-
   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
   mutate(data=str_trim(data, "both")) %>%
   filter(data!="") %>%
+  filter(lengths(strsplit(data," "))>10) %>%
   drop_na(data)
 rm(en_us_news)
 
@@ -65,6 +67,7 @@ tidy_twitter <-
   mutate(data=str_replace_all(data, "[^a-zA-Z ]", "")) %>%
   mutate(data=str_trim(data, "both")) %>%
   filter(data!="") %>%
+  filter(lengths(strsplit(data," "))>10) %>%
   drop_na(data)
 rm(en_us_twitter)
 
@@ -106,39 +109,42 @@ capstone_quadgrams <-
 ```
 
 ```{r ngram_frequency}
-
-capstone_unigrams_freq <-
-  capstone_unigrams %>%
-  count(word1) %>%
-  filter(n>1) %>%
-  mutate(relfreq = n / sum(n)) %>%
-  arrange(desc(relfreq)) %>%
-  mutate(cumfreq=cumsum(relfreq))
-
-
-capstone_bigrams_freq <-
-  capstone_bigrams %>%
-  count(word1,word2) %>%
-  filter(n>1) %>%
-  mutate(relfreq = n / sum(n)) %>%
-  arrange(desc(relfreq)) %>%
-  mutate(cumfreq=cumsum(relfreq))
-
-capstone_trigrams_freq <-
-  capstone_trigrams %>%
-  count(word1,word2,word3) %>%
-  filter(n>1) %>%
-  mutate(relfreq = n / sum(n)) %>%
-  arrange(desc(relfreq)) %>%
-  mutate(cumfreq=cumsum(relfreq))
-
-capstone_quadgrams_freq <-
-  capstone_quadgrams %>%
-  count(word1,word2,word3,word4) %>%
-  filter(n>1) %>%
-  mutate(relfreq = n / sum(n)) %>%
-  arrange(desc(relfreq)) %>%
-  mutate(cumfreq=cumsum(relfreq))
+# 
+# capstone_unigrams_freq <-
+#   capstone_unigrams %>%
+#   count(word1) %>%
+#   filter(n>1) %>%
+#   mutate(relfreq = n / sum(n)) %>%
+#   arrange(desc(relfreq)) %>%
+#   mutate(cumfreq=cumsum(relfreq))
+# #rm(capstone_unigrams)
+# 
+# capstone_bigrams_freq <-
+#   capstone_bigrams %>%
+#   count(word1,word2) %>%
+#   filter(n>1) %>%
+#   mutate(relfreq = n / sum(n)) %>%
+#   arrange(desc(relfreq)) %>%
+#   mutate(cumfreq=cumsum(relfreq))
+# # #rm(capstone_bigrams)
+# # 
+# capstone_trigrams_freq <-
+#   capstone_trigrams %>%
+#   count(word1,word2,word3) %>%
+#   filter(n>1) %>%
+#   mutate(relfreq = n / sum(n)) %>%
+#   arrange(desc(relfreq)) %>%
+#   mutate(cumfreq=cumsum(relfreq))
+# # #rm(capstone_trigrams)
+# # 
+# capstone_quadgrams_freq <-
+#   capstone_quadgrams %>%
+#   count(word1,word2,word3,word4) %>%
+#   filter(n>1) %>%
+#   mutate(relfreq = n / sum(n)) %>%
+#   arrange(desc(relfreq)) %>%
+#   mutate(cumfreq=cumsum(relfreq))
+# # #rm(capstone_quadgrams)
 
 ```
 
@@ -148,15 +154,16 @@ capstone_quadgrams_freq <-
 # for each n-gram reference set, remove all but the top 3
 
 tidy_unigrams <-
-  en_us_capstone_subset_tidy_unigrams %>%
+  capstone_unigrams %>%
   count(word1) %>%
   mutate(relfreq = n / sum(n)) %>%
   mutate(topword=min_rank(desc(n))) %>%
   arrange(desc(relfreq)) %>%
   mutate(relfreq = n / sum(n))
+rm(capstone_unigrams_freq)
 
 tidy_bigrams <-
-  en_us_capstone_subset_tidy_bigrams %>%
+  capstone_bigrams_freq %>%
   count(word1,word2) %>%
   filter(n>1) %>%
   arrange(word1,desc(n)) %>%
@@ -164,9 +171,10 @@ tidy_bigrams <-
   mutate(topword=min_rank(desc(n))) %>%
   mutate(relfreq = n / sum(n)) %>%
   filter(topword<=3)
+rm(capstone_bigrams_freq)
 
 tidy_trigrams <-
-  en_us_capstone_subset_tidy_trigrams %>%
+  capstone_trigrams_freq %>%
   count(word1,word2,word3) %>%
   filter(n>1) %>%
   arrange(word1,word2,desc(n)) %>%
@@ -174,9 +182,10 @@ tidy_trigrams <-
   mutate(topword=min_rank(desc(n))) %>%
   mutate(relfreq = n / sum(n)) %>%
   filter(topword<=3)
+rm(capstone_trigrams_freq)
 
 tidy_quadgrams <-
-  en_us_capstone_subset_tidy_quadgrams %>%
+  capstone_quadgrams_freq %>%
   count(word1,word2,word3,word4) %>%
   filter(n>1) %>%
   arrange(word1,word2,word3,desc(n)) %>%
@@ -184,6 +193,7 @@ tidy_quadgrams <-
   mutate(topword=min_rank(desc(n))) %>%
   mutate(relfreq = n / sum(n)) %>%
   filter(topword<=3)
+rm(capstone_quadgrams_freq)
 
 
 ```
@@ -213,7 +223,7 @@ wordpredict <- function(input) {
 
   if (stringlength >=3) {
     suggestedwords <- wordpredictn3(wordsin[stringlength-2],wordsin[stringlength-1],wordsin[stringlength])
-    
+
     
   } else if (stringlength == 2) {
     suggestedwords <- wordpredictn2(wordsin[stringlength-1],wordsin[stringlength])

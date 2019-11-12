@@ -13,6 +13,7 @@ library(stringr)
 library(knitr)
 library(ngram)
 library(tm)
+library(data.table)
 ```
 
 ```{r data_import, warning=FALSE, echo=TRUE}
@@ -34,12 +35,12 @@ close(con)
 ```
 
 ```{r data_subset}
-sampleprop = 0.2
+sampleprop = 0.5
 
 set.seed(061119)
-en_us_blog_subset <- data.frame(data=sample(en_us_blogs$en_us_blogs,(ceiling(nrow(en_us_blogs)*sampleprop))),stringsAsFactors = FALSE)
-en_us_news_subset <- data.frame(data=sample(en_us_news$en_us_news,(ceiling(nrow(en_us_news)*sampleprop))),stringsAsFactors = FALSE)
-en_us_twitter_subset <- data.frame(data=sample(en_us_twitter$en_us_twitter,(ceiling(nrow(en_us_twitter)*sampleprop))),stringsAsFactors = FALSE)
+en_us_blog_subset <- data.table(data=sample(en_us_blogs$en_us_blogs,(ceiling(nrow(en_us_blogs)*sampleprop))),stringsAsFactors = FALSE)
+en_us_news_subset <- data.table(data=sample(en_us_news$en_us_news,(ceiling(nrow(en_us_news)*sampleprop))),stringsAsFactors = FALSE)
+en_us_twitter_subset <- data.table(data=sample(en_us_twitter$en_us_twitter,(ceiling(nrow(en_us_twitter)*sampleprop))),stringsAsFactors = FALSE)
 
 en_us_capstone_subset <- 
   data.frame(en_us_blog_subset) %>%
