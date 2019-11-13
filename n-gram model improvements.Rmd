@@ -100,7 +100,7 @@ quadgrams <- capstone_quadgrams[!is.na(word1)][,.N,by=.(word1,word2,word3,word4)
 rm(capstone_quadgrams)
 ```
 
-```{r katzbackoff_functions}
+```{r backoff_functions}
 
 # for a given word, predict the next using the bigram data
 wordpredictn1 <- function(word_1) {
@@ -134,5 +134,18 @@ wordpredict <- function(input) {
   }
   suggestedwords
 }
+
+```
+
+```{r backoff_function_score}
+#for the nth word, calculate likelihood scores based on the prior words
+#reformat n-gram tables to refer to words proximity to predicted - word3 in a trigram becomes word1 as it is closest to predicted word
+
+setnames(quadgrams,c("word1","word2","word3","word4"),c("pword3","pword2","pword1","word"))
+setnames(trigrams,c("word1","word2","word3"),c("pword2","pword1","word"))
+setnames(bigrams,c("word1","word2"),c("pword1","word"))
+
+capstone <- rbindlist(list(quadgrams,trigrams,bigrams),use.names=TRUE, idcol=TRUE)
+setkey(capstone,pword1)
 
 ```
