@@ -34,16 +34,17 @@ en_us_news <- data.table(en_us_news)
 close(con)
 ```
 
-```{r data_subset_dt}
+```{r data_subset_combine}
+ssprop = 0.4
 
 setnames(en_us_blogs,"en_us_blogs","data",skip_absent=TRUE)
-en_us_blogs <- en_us_blogs[,data:=iconv(data,"latin1","ASCII",sub="")][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
+en_us_blogs <- en_us_blogs[,data:=iconv(data,"latin1","ASCII",sub="")][sample(.N,ceiling(.N*ssprop))][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
 
 setnames(en_us_news,"en_us_news","data",skip_absent=TRUE)
-en_us_news <- en_us_news[,data:=iconv(data,"latin1","ASCII",sub="")][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
+en_us_news <- en_us_news[,data:=iconv(data,"latin1","ASCII",sub="")][sample(.N,ceiling(.N*ssprop))][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
 
 setnames(en_us_twitter,"en_us_twitter","data",skip_absent=TRUE)
-en_us_twitter <- en_us_twitter[,data:=iconv(data,"latin1","ASCII",sub="")][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
+en_us_twitter <- en_us_twitter[,data:=iconv(data,"latin1","ASCII",sub="")][sample(.N,ceiling(.N*ssprop))][,data:=str_replace_all(data, "[^a-zA-Z ]", "")][,data:=str_trim(data, "both")][data!=""][!is.na(data)][lengths(strsplit(data," "))>1]
 
 capstone <- rbindlist(list(en_us_blogs,en_us_news,en_us_twitter),use.names=TRUE, idcol=TRUE)
 setkey(capstone,data)
@@ -51,53 +52,104 @@ setkey(capstone,data)
 rm(en_us_blogs,en_us_news,en_us_twitter)
 ```
 
+
+
 ```{r capstone cleaning}
-profanewords <- readLines("https://raw.githubusercontent.com/shutterstock/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en")
+con<- url("https://raw.githubusercontent.com/shutterstock/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en","r")
+profanewords <- readLines(con)
 close(con)
 
 #remove all lines from capstone dataset which contain a profane word
-capstone <- capstone[!grepl(paste(profanewords, collapse=" | "),data,ignore.case = TRUE)]
+#capstone <- capstone[!grepl(paste(profanewords, collapse=" | "),data,ignore.case = TRUE)]
 
-rm(profanewords)
+#rm(profanewords)
 ```
 
 ```{r restructure_unigrams}
-capstone_unigrams <- unnest_tokens(capstone,word1,data,token = "ngrams",n=1, collapse=FALSE)
+capstone_unigrams <- unnest_tokens(capstone,pword1,data,token = "ngrams",n=1, collapse=FALSE)
 ```
 
 ```{r unigram_freq}
-unigrams <- capstone_unigrams[!is.na(word1)][,.N,by=word1][N>1] #[,relfreq:=N/sum(N)][order(-N)][,topword:=min_rank(desc(N))][topword<=3]
+unigrams <- capstone_unigrams[!is.na(pword1)][,.N,by=pword1][N>1][!pword1 %in% profanewords] 
+#[,relfreq:=N/sum(N)][order(-N)][,topword:=min_rank(desc(N))][topword<=3]
 rm(capstone_unigrams)
 ```
 
 ```{r restructure_bigrams}
 capstone_bigrams <- unnest_tokens(capstone,bigram,data,token = "ngrams",n=2, collapse=FALSE)
-capstone_bigrams <- separate(capstone_bigrams,bigram, c("word1", "word2"), sep = " ")
+capstone_bigrams <- separate(capstone_bigrams,bigram, c("pword1","word"), sep = " ")
 ```
 
 ```{r bigram_freq}
-bigrams <- capstone_bigrams[!is.na(word1)][,.N,by=.(word1,word2)][N>1] #[,relfreq:=N/sum(N),by=word1][order(word1,-N)][,topword:=min_rank(desc(N)),by=word1][topword<=3]
+bigrams <- capstone_bigrams[!is.na(word)][,.N,by=.(pword1,word)][N>1][!pword1 %in% profanewords][!word %in% profanewords]
+#[,relfreq:=N/sum(N),by=pword1][order(pword1,-N)][,topword:=min_rank(desc(N)),by=pword1][topword<=3]
 rm(capstone_bigrams)
 ```
 
 ```{r restructure_trigrams}
 capstone_trigrams <- unnest_tokens(capstone,trigram,data,token = "ngrams",n=3, collapse=FALSE)
-capstone_trigrams <- separate(capstone_trigrams,trigram, c("word1", "word2","word3"), sep = " ")
+capstone_trigrams <- separate(capstone_trigrams,trigram, c("pword2","pword1","word"), sep = " ")
 ```
 
 ```{r trigram_freq}
-trigrams <- capstone_trigrams[!is.na(word1)][,.N,by=.(word1,word2,word3)][N>1] #[,relfreq:=N/sum(N),by=.(word1,word2)][order(word1,word2,-N)][,topword:=min_rank(desc(N)),by=.(word1,word2)][topword<=3]
+trigrams <- capstone_trigrams[!is.na(word)][,.N,by=.(pword2,pword1,word)][N>1][!pword2 %in% profanewords][!pword1 %in% profanewords][!word %in% profanewords] 
+#[,relfreq:=N/sum(N),by=.(pword2,pword1)][order(pword2,pword1,-N)][,topword:=min_rank(desc(N)),by=.(pword2,pword1)][topword<=3]
 rm(capstone_trigrams)
 ```
 
 ```{r restructure_quadgrams}
 capstone_quadgrams <- unnest_tokens(capstone,quadgram,data,token = "ngrams",n=4, collapse=FALSE)
-capstone_quadgrams <- separate(capstone_quadgrams,quadgram, c("word1", "word2","word3","word4"), sep = " ")
+capstone_quadgrams <- separate(capstone_quadgrams,quadgram, c("pword3","pword2","pword1","word"), sep = " ")
 ```
 
 ```{r quadgram_freq}
-quadgrams <- capstone_quadgrams[!is.na(word1)][,.N,by=.(word1,word2,word3,word4)][N>1] #[,relfreq:=N/sum(N),by=.(word1,word2,word3)][order(word1,word2,word3,-N)][,topword:=min_rank(desc(N)),by=.(word1,word2,word3)][topword<=3]
+quadgrams <- capstone_quadgrams[!is.na(word)][,.N,by=.(pword3,pword2,pword1,word)][N>1][!pword3 %in% profanewords][!pword2 %in% profanewords][!pword1 %in% profanewords][!word %in% profanewords] 
+#[,relfreq:=N/sum(N),by=.(pword3,pword2,pword1)][order(pword3,pword2,pword1,-N)][,topword:=min_rank(desc(N)),by=.(pword3,pword2,pword1)][topword<=3]
 rm(capstone_quadgrams)
+```
+
+```{r backoff_function_score}
+#for the nth word, calculate likelihood scores based on the prior words
+
+capstone_ref <- rbindlist(list(unigrams,bigrams,trigrams,quadgrams),use.names=TRUE, idcol=TRUE, fill=TRUE)
+setcolorder(capstone_ref,c(".id","pword3","pword2","pword1","word","N"))
+capstone_ref <- capstone_ref[order(pword1,pword2,pword3,-N)]
+```
+
+```{r backoff_function_score}
+#for the nth word, calculate likelihood scores based on the prior words
+# score is N for pword2, pword1, word / N for pword3, pword2, pword1
+
+for (i in 1:nrow(capstone_ref)) {
+  capstone_ref[i,score := 
+                 capstone_ref[i,N]/
+                 capstone_ref[is.na(pword3)&
+                                ((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&
+                                               ((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&
+                                               word==pword1[i],N]]
+}
+```
+
+```{r}
+for (i in 1:nrow(capstone_ref)) set(capstone_ref,i=i,j="score",value=capstone_ref[i,N]/capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N])
+
+```
+
+```{r}
+for (i in 1:nrow(capstone_ref)) {
+  gramfreq[i] <- capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
+}
+#capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
+View(gramfreq)
+```
+
+```{r}
+capstone_ref2 <- capstone_ref[, .(pword3=NA ,pword2 = pword3, pword1 = pword2, word = pword1)]
+capstone_ref2 <- merge(capstone_ref2,capstone_ref, by=c("pword3","pword2","pword1","word"),sort=FALSE)
+capstone_ref3 <- capstone_ref2[, .(pword3=pword2 ,pword2 = pword1, pword1 = word, word = NULL,gramfreq=N)]
+capstone_ref4 <- merge(capstone_ref,unique(capstone_ref3),by=c("pword3","pword2","pword1"))
+setcolorder(capstone_ref4,c(".id","pword3","pword2","pword1","word","N","gramfreq"))
+capstone_ref4[,gramscore:=N/gramfreq]
 ```
 
 ```{r backoff_functions}
@@ -137,15 +189,18 @@ wordpredict <- function(input) {
 
 ```
 
-```{r backoff_function_score}
-#for the nth word, calculate likelihood scores based on the prior words
-#reformat n-gram tables to refer to words proximity to predicted - word3 in a trigram becomes word1 as it is closest to predicted word
 
-setnames(quadgrams,c("word1","word2","word3","word4"),c("pword3","pword2","pword1","word"))
-setnames(trigrams,c("word1","word2","word3"),c("pword2","pword1","word"))
-setnames(bigrams,c("word1","word2"),c("pword1","word"))
+```{r backoff_function2}
 
-capstone <- rbindlist(list(quadgrams,trigrams,bigrams),use.names=TRUE, idcol=TRUE)
-setkey(capstone,pword1)
+# for a given word, predict the most likely next candidate using score table
+#load capstone_ref table
+
+wordpredict <- function(input) {
+  wordsin <- str_split(tolower(input),"[[:punct:] ]+",simplify=TRUE)
+  stringlength <- length(wordsin)
+  suggestedwords <- capstone_ref4[pword1==wordsin[stringlength]&pword2==wordsin[stringlength-1]&pword3==wordsin[stringlength-2],c("word","gramscore")]
+  result <- dplyr::top_n(suggestedwords,5,gramscore)
+  return(result)
+}
 
 ```
