@@ -52,8 +52,6 @@ setkey(capstone,data)
 rm(en_us_blogs,en_us_news,en_us_twitter)
 ```
 
-
-
 ```{r capstone cleaning}
 con<- url("https://raw.githubusercontent.com/shutterstock/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en","r")
 profanewords <- readLines(con)
@@ -116,79 +114,77 @@ setcolorder(capstone_ref,c(".id","pword3","pword2","pword1","word","N"))
 capstone_ref <- capstone_ref[order(pword1,pword2,pword3,-N)]
 ```
 
-```{r backoff_function_score}
-#for the nth word, calculate likelihood scores based on the prior words
-# score is N for pword2, pword1, word / N for pword3, pword2, pword1
+# ```{r backoff_function_score}
+# #for the nth word, calculate likelihood scores based on the prior words
+# # score is N for pword2, pword1, word / N for pword3, pword2, pword1
+# 
+# for (i in 1:nrow(capstone_ref)) {
+#   capstone_ref[i,score := 
+#                  capstone_ref[i,N]/
+#                  capstone_ref[is.na(pword3)&
+#                                 ((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&
+#                                                ((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&
+#                                                word==pword1[i],N]]
+# }
+# ```
 
-for (i in 1:nrow(capstone_ref)) {
-  capstone_ref[i,score := 
-                 capstone_ref[i,N]/
-                 capstone_ref[is.na(pword3)&
-                                ((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&
-                                               ((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&
-                                               word==pword1[i],N]]
-}
-```
+# ```{r eval=FALSE}
+# for (i in 1:nrow(capstone_ref)) set(capstone_ref,i=i,j="score",value=capstone_ref[i,N]/capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N])
+# 
+# ```
+# 
+# ```{r eval=FALSE}
+# for (i in 1:nrow(capstone_ref)) {
+#   gramfreq[i] <- capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
+# }
+# #capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
+# View(gramfreq)
+# ```
 
-```{r}
-for (i in 1:nrow(capstone_ref)) set(capstone_ref,i=i,j="score",value=capstone_ref[i,N]/capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N])
-
-```
-
-```{r}
-for (i in 1:nrow(capstone_ref)) {
-  gramfreq[i] <- capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
-}
-#capstone_ref[is.na(pword3)&((pword2==pword3[i])|(is.na(pword2)&is.na(pword3[i])))&((pword1==pword2[i])|(is.na(pword1)&is.na(pword2[i])))&word==pword1[i],N]
-View(gramfreq)
-```
-
-```{r}
+```{r lookup_apply_scores}
 capstone_ref2 <- capstone_ref[, .(pword3=NA ,pword2 = pword3, pword1 = pword2, word = pword1)]
 capstone_ref2 <- merge(capstone_ref2,capstone_ref, by=c("pword3","pword2","pword1","word"),sort=FALSE)
 capstone_ref3 <- capstone_ref2[, .(pword3=pword2 ,pword2 = pword1, pword1 = word, word = NULL,gramfreq=N)]
 capstone_ref4 <- merge(capstone_ref,unique(capstone_ref3),by=c("pword3","pword2","pword1"))
 setcolorder(capstone_ref4,c(".id","pword3","pword2","pword1","word","N","gramfreq"))
-capstone_ref4[,gramscore:=N/gramfreq]
+capstone_ref4[,gramscore:=(N/gramfreq)*(.id/4)]
 ```
 
-```{r backoff_functions}
-
-# for a given word, predict the next using the bigram data
-wordpredictn1 <- function(word_1) {
-  bigrams[word1==word_1][order(-N)]
-}
-
-wordpredictn2 <- function(word_1,word_2) {
-  trigrams[word1==word_1 & word2==word_2][order(word1,-N)]
-}
-
-wordpredictn3 <- function(word_1,word_2,word_3) {
-  quadgrams[word1==word_1 & word2==word_2 & word3==word_3][order(word1,word2,-N)]
-}
-
-wordpredict <- function(input) {
-  
-  wordsin <- str_split(input,"[[:punct:] ]+",simplify=TRUE)  
-  stringlength <- length(wordsin)
-
-  if (stringlength >=3) {
-    suggestedwords <- wordpredictn3(wordsin[stringlength-2],wordsin[stringlength-1],wordsin[stringlength])
-
-    
-  } else if (stringlength == 2) {
-    suggestedwords <- wordpredictn2(wordsin[stringlength-1],wordsin[stringlength])
-    
-
-  } else if (stringlength == 1) {
-    suggestedwords <- wordpredictn1(wordsin[stringlength])
-
-  }
-  suggestedwords
-}
-
-```
-
+# ```{r backoff_functions}
+# 
+# # for a given word, predict the next using the bigram data
+# wordpredictn1 <- function(word_1) {
+#   bigrams[word1==word_1][order(-N)]
+# }
+# 
+# wordpredictn2 <- function(word_1,word_2) {
+#   trigrams[word1==word_1 & word2==word_2][order(word1,-N)]
+# }
+# 
+# wordpredictn3 <- function(word_1,word_2,word_3) {
+#   quadgrams[word1==word_1 & word2==word_2 & word3==word_3][order(word1,word2,-N)]
+# }
+# 
+# wordpredict <- function(input) {
+#   
+#   wordsin <- str_split(input,"[[:punct:] ]+",simplify=TRUE)  
+#   stringlength <- length(wordsin)
+# 
+#   if (stringlength >=3) {
+#     suggestedwords <- wordpredictn3(wordsin[stringlength-2],wordsin[stringlength-1],wordsin[stringlength])
+# 
+#   } else if (stringlength == 2) {
+#     suggestedwords <- wordpredictn2(wordsin[stringlength-1],wordsin[stringlength])
+#     
+# 
+#   } else if (stringlength == 1) {
+#     suggestedwords <- wordpredictn1(wordsin[stringlength])
+# 
+#   }
+#   suggestedwords
+# }
+# 
+# ```
 
 ```{r backoff_function2}
 
