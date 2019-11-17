@@ -1,7 +1,19 @@
 library(shiny)
 
 shinyServer(function(input, output) {
+  output$b <-
+    renderText({
+      if (input$a == "") {
+        ""
+      } else {
+        wordpredict(input$a)[1,1]
+      }
+    })
+  output$c <-
+    renderText({
+      wordpredict(input$a)[2,1]
+    })
 
-    output$textpred1 <- renderText({"test"})
+    #output$textpred1 <- renderText({"test"})
 
 })

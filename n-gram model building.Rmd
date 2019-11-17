@@ -201,11 +201,11 @@ wordpredict <- function(input) {
     suggestedwords <- wordpredictn3(wordsin[stringlength-2],wordsin[stringlength-1],wordsin[stringlength])
     
     
-  } else if (stringlength == 2) {
+  } else if (stringlength >= 2) {
     suggestedwords <- wordpredictn2(wordsin[stringlength-1],wordsin[stringlength])
     
 
-  } else if (stringlength == 1) {
+  } else if (stringlength >= 1) {
     suggestedwords <- wordpredictn1(wordsin[stringlength])
 
   }

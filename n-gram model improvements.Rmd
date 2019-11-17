@@ -243,7 +243,7 @@ capstone_ref_stem4[,gramscore:=N/gramfreq]
 wordpredict <- function(input) {
   wordsin <- str_split(tolower(input),"[[:punct:] ]+",simplify=TRUE)
   stringlength <- length(wordsin)
-  suggestedwords <- capstone_ref4[pword1==wordsin[stringlength]&pword2==wordsin[stringlength-1]&pword3==wordsin[stringlength-2],c("word","gramscore")]
+  suggestedwords <- capstone_ref4[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==wordsin[stringlength-2],c("word","gramscore")]
   result <- dplyr::top_n(suggestedwords,5,gramscore)
   if (nrow(result) >= 3) {
     return(result)

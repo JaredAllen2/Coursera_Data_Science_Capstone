@@ -1,21 +1,22 @@
 library(shiny)
 
-# Define UI for application that draws a histogram
 shinyUI(fluidPage(
     fluidRow(
-        column(4,
+        column(1,
                "input text:"
         ),
-        column(4, offset = 4,
-               " "
-        )      
+        column(4,
+               ui <- fluidPage(
+                   textInput("a","")
+               )
+        )
     ),
     fluidRow(
         column(2, offset = 1,
-               "option 1"
+               textOutput("b")
         ),
         column(2,
-               "option 2"
+               textOutput("c")
         ),
         column(2,
                "option 3"
