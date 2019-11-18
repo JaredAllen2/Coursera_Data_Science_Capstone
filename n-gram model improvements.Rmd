@@ -180,7 +180,6 @@ capstone_ref_stem <- capstone_ref_stem[order(pword1,pword2,pword3,-N)]
 
 
 ```{r merge_gram_counts}
-capstone_ref2 <- capstone_ref[, .(pword3=NA ,pword2 = pword3, pword1 = pword2, word = pword1)]
 capstone_ref2 <- merge(capstone_ref2,capstone_ref, by=c("pword3","pword2","pword1","word"),sort=FALSE)
 capstone_ref3 <- capstone_ref2[, .(pword3=pword2 ,pword2 = pword1, pword1 = word, word = NULL,gramfreq=N)]
 capstone_ref4 <- merge(capstone_ref,unique(capstone_ref3),by=c("pword3","pword2","pword1"))
@@ -195,6 +194,19 @@ capstone_ref_stem3 <- capstone_ref_stem2[, .(pword3=pword2 ,pword2 = pword1, pwo
 capstone_ref_stem4 <- merge(capstone_ref_stem,unique(capstone_ref_stem3),by=c("pword3","pword2","pword1"))
 setcolorder(capstone_ref_stem4,c(".id","pword3","pword2","pword1","word","N","gramfreq"))
 capstone_ref_stem4[,gramscore:=N/gramfreq]
+```
+
+```{r Kneser-Ney }
+capstone_ref2 <- merge(capstone_ref2,capstone_ref, by=c("pword3","pword2","pword1","word"),sort=FALSE)
+capstone_ref3 <- capstone_ref2[, .(pword3=pword2 ,pword2 = pword1, pword1 = word, word = NULL,gramfreq=N)]
+capstone_ref4 <- merge(capstone_ref,unique(capstone_ref3),by=c("pword3","pword2","pword1"))
+setcolorder(capstone_ref4,c(".id","pword3","pword2","pword1","word","N","gramfreq"))
+capstone_ref4[,gramscore:=N/gramfreq]
+
+# capstone_ref[.id==4,(pcontw=length(c(pword3,pword2,pword1))),by=word]
+# capstone_ref[.id==3,(pcontw=length(c(pword3,pword2,pword1))),by=word]
+# capstone_ref[.id==2,(pcontw=length(c(pword3,pword2,pword1))),by=word]
+# capstone_ref[.id==1,(pcontw=length(c(pword3,pword2,pword1))),by=word]
 ```
 
 # ```{r backoff_functions}
