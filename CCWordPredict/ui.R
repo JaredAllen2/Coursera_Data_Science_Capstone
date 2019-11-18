@@ -19,7 +19,7 @@ shinyUI(fluidPage(
                textOutput("c")
         ),
         column(2,
-               "option 3"
+               textOutput("d")
         ),
         column(2,
                "option 2"

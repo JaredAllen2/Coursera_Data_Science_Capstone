@@ -11,9 +11,19 @@ shinyServer(function(input, output) {
     })
   output$c <-
     renderText({
-      wordpredict(input$a)[2,1]
+      if (input$a == "") {
+        ""
+      } else {
+        wordpredict(input$a)[2,1]
+      }
     })
-
-    #output$textpred1 <- renderText({"test"})
+  output$d <-
+    renderText({
+      if (input$a == "") {
+        ""
+      } else {
+        wordpredict(input$a)[3,1]
+      }
+    })
 
 })
