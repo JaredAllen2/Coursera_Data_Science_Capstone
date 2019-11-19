@@ -180,7 +180,7 @@ capstone_ref_stem <- capstone_ref_stem[order(pword1,pword2,pword3,-N)]
 
 
 ```{r merge_gram_counts}
-capstone_ref2 <- capstone_ref[, .(pword3=NA ,pword2 = pword3, pword1 = pword2, word = pword1)]
+capstone_ref2 <- capstone_ref[, .(pword3=NA ,pword2 = pword3, pword1 = pword2, word = pword1, gramfreq = N)] #
 capstone_ref2 <- merge(capstone_ref2,capstone_ref, by=c("pword3","pword2","pword1","word"),sort=FALSE)
 capstone_ref3 <- capstone_ref2[, .(pword3=pword2 ,pword2 = pword1, pword1 = word, word = NULL,gramfreq=N)]
 capstone_ref4 <- merge(capstone_ref,unique(capstone_ref3),by=c("pword3","pword2","pword1"))
@@ -206,24 +206,29 @@ setcolorder(capstone_ref4,c(".id","pword3","pword2","pword1","word","N","gramfre
 setnames(capstone_ref4,"N","gramcount")
 
 capstone_ref4[.id==4, firstTerm:= gramcount/gramfreq
-              ][.id==3, firstTerm:= gramcount-0.75/gramfreq
-                ][.id==2, firstTerm:= gramcount-0.75/gramfreq
-                  ][.id==1, firstTerm:= gramcount-0.75/gramfreq]
+              ][.id==3, firstTerm:= pmax(gramcount-0.75,0)/gramfreq
+                ][.id==2, firstTerm:= pmax(gramcount-0.75,0)/gramfreq
+                  ][.id==1, firstTerm:= pmax(gramcount-0.75,0)/gramfreq]
 
 capstone_ref4[.id==4, lambda:= 0/gramfreq
               ][.id==3, lambda:= 0/gramfreq
                 ][.id==2, lambda:= 0/gramfreq
                   ][.id==1, lambda:= 0/gramfreq]
 
-capstone_ref4[.id==4, pcontw:=length(gramcount),by=word
-              ][.id==3, pcontw:=length(gramcount),by=word
-                ][.id==2, pcontw:=length(gramcount),by=word
-                  ][.id==1, pcontw:=length(gramcount),by=word]
+capstone_ref4[.id==4, pcontwn:=length(gramcount),by=word
+              ][.id==3, pcontwn:=length(gramcount),by=word
+                ][.id==2, pcontwn:=length(gramcount),by=word
+                  ][.id==1, pcontwn:=length(gramcount),by=word]
 
-capstone_ref4[.id==4, KNscore:=(firstTerm+lambda)*pcontw
-              ][.id==3, KNscore:=(firstTerm+lambda)*pcontw
-                ][.id==2, KNscore:=(firstTerm+lambda)*pcontw
-                  ][.id==1, KNscore:=(firstTerm+lambda)*pcontw]
+capstone_ref4[.id==4, pcontwd:=length(gramcount)
+              ][.id==3, pcontwd:=length(gramcount)
+                ][.id==2, pcontwd:=length(gramcount)
+                  ][.id==1, pcontwd:=length(gramcount)]
+
+capstone_ref4[.id==4, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)
+              ][.id==3, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)
+                ][.id==2, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)
+                  ][.id==1, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)]
 
 ```
 
@@ -320,6 +325,31 @@ wordpredictstem <- function(input) {
   result <- dplyr::top_n(suggestedwords,5,gramscore)
   return(result)
   }
+}
+
+```
+
+```{r backoff_function4}
+
+# for a given word, predict the most likely next candidate using score table
+#load capstone_ref table
+
+wordpredict <- function(input) {
+  wordsin <- str_split(tolower(input),"[[:punct:] ]+",simplify=TRUE)
+  stringlength <- length(wordsin)
+  suggestedwords <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==wordsin[stringlength-2],c("word","KNscore")]
+  if (nrow(suggestedwords) <=5) {
+  suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1],c("word","KNscore")]
+  } else suggestedwords2=NULL
+  suggestedwords <- rbindlist(list(suggestedwords,suggestedwords2))
+  if (nrow(suggestedwords) <=5) {
+  suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength],c("word","KNscore")] 
+  } else suggestedwords2=NULL
+  suggestedwords <- rbindlist(list(suggestedwords,suggestedwords2))
+
+  result <- dplyr::top_n(suggestedwords,3,KNscore)
+  return(result)
+  
 }
 
 ```
