@@ -20,9 +20,10 @@ shinyUI(fluidPage(
         ),
         column(2,
                textOutput("d")
-        ),
-        column(2,
-               "option 2"
-        )  
+        )
+    ),
+    fluidRow(
+        column(8, offset = 1,
+               plotOutput("wordprob"))
     )
 ))

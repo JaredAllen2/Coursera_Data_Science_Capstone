@@ -1,4 +1,6 @@
 library(shiny)
+library(tidyverse)
+
 
 shinyServer(function(input, output) {
   output$b <-
@@ -23,6 +25,14 @@ shinyServer(function(input, output) {
         ""
       } else {
         wordpredict(input$a)[3,1]
+      }
+    })
+  output$wordprob <-
+    renderPlot({
+      if (input$a == "") {
+        NULL
+      } else {
+      qplot(wordpredict(input$a)$word, wordpredict(input$a)$KNscore)
       }
     })
 
