@@ -35,7 +35,7 @@ This reference table is then able to be searched for any given n-gram and return
 
 ## Shiny App
 
-The Shiny App has an input box for entering text, during text entry the app cleans out punctuation, alters text to lower case, and then splits the input into individual words to check against the reference table. It then returns the top three predictions immediately below the input box.
+The Shiny App has an input box for entering text, during text entry the app cleans out punctuation, alters text to lower case, and then splits the input into individual words to check against the reference table. It then returns the top predictions immediately below the input box.
 
 In addition, the app also displays the top 5 candidate words in a graph along with their likelihood scores, and generates a word cloud of all potential candidate words, sized according to their likelihood.
 

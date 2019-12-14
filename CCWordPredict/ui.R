@@ -23,25 +23,25 @@ shinyUI(fluidPage(
     hr(),
     fluidRow(
         column(2, offset = 1,
-               ("Suggestion 1:")
+               ("Suggested word:")
         ),
-        column(2,
-               ("Suggestion 2:")
-        ),
-        column(2,
-               ("Suggestion 3:")
-        )
+        #column(2,
+        #       ("Suggestion 2:")
+        #),
+        #column(2,
+        #       ("Suggestion 3:")
+        #)
     ),
     fluidRow(
         column(2, offset = 1,
                textOutput("b")
         ),
-        column(2,
-               textOutput("c")
-        ),
-        column(2,
-               textOutput("d")
-        )
+        #column(2,
+        #       textOutput("c")
+        #),
+        #column(2,
+        #       textOutput("d")
+        #)
     ),
     hr(),
     fluidRow(

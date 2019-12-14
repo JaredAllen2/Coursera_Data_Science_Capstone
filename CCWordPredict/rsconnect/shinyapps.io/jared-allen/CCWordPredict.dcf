@@ -5,8 +5,8 @@ account: jared-allen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1600112
-bundleId: 2668051
+bundleId: 2668221
 url: https://jared-allen.shinyapps.io/CCWordPredict/
-when: 1576358401.42237
+when: 1576365147.93825
 asMultiple: FALSE
 asStatic: FALSE
