@@ -37,13 +37,14 @@ shinyServer(function(input, output) {
       wordcloud(wordpredict(input$a)$word,wordpredict(input$a)$KNscore)
       }
     })
-  output$Wordprobgg <-
+  output$wordprobgg <-
     renderPlot({
       if (input$a == "") {
         NULL
       } else {
         ggplot(dplyr::top_n(wordpredict(input$a),5,KNscore),aes(x=reorder(word,-KNscore), y=KNscore)) +
-          geom_point()
+          geom_point() +
+          labs(x="predicted next word",y="likelihood score")
       }
     })
 

@@ -1,0 +1,41 @@
+---
+title: "Capstone Presentation"
+author: "Jared Allen"
+date: "14/12/2019"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Coursera Capstone - Introduction
+
+The Coursera Data Science Capstone culminated in a project in which the target was to train a word prediction app using data provided by Coursera from 3 sources, News sites, Blog sites, and scraped from Twitter.
+
+The final product is an online shiny app which allows a user to enter a phrase and return a prediction for the next required word.
+
+## Model
+
+A Kneser-Ney smoothed scoring model was used (thanks to an excellent breakdown of the mathematics by Denny Ceccon on Medium.com<sup>1</sup>) to calculate a likelihood score for all potential subsequent words based on preceding trigram, bigram or unigram input. The equation used to calculate the likelihood score was:
+
+<img src = "https://miro.medium.com/max/621/1*pMttoEXAH_GS9d6AtkhF2g.png"></img>
+
+with a lambda value of 0 for the highest order n-gram (words following a trigram), and them discounted lambda values of 0.75 for bigram words predictions and 0.5625 for unigram predictions.
+
+<font size="2"> <sup>1</sup>https://medium.com/@dennyc/a-simple-numerical-example-for-kneser-ney-smoothing-nlp-4600addf38b8? </font>
+
+## Strategy
+
+The strategy pursued for training of this model was to summarise the corpora into a dataframe of 1, 2, and 3 length n-grams along with all observed subsequent words, and the associated Kneser-Ney likelihood score.
+
+After calculation of likelihood scores, all words which occured 4 times or less in the corpora were removed to reduce the size of the final lookup table, resulting in a final reference table with 1,155,561 rows.
+
+This reference table is then able to be searched for any given n-gram and return a list of all potential candidate words and their likelihood score.
+
+## Shiny App
+
+The Shiny App has an input box for entering text, during text entry the app cleans out punctuation, alters text to lower case, and then splits the input into individual words to check against the reference table. It then returns the top three predictions immediately below the input box.
+
+In addition, the app also displays the top 5 candidate words in a graph along with their likelihood scores, and generates a word cloud of all potential candidate words, sized according to their likelihood.
+

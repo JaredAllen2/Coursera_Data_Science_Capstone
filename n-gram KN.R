@@ -1,3 +1,4 @@
+library(tidyverse)
 library(data.table)
 
 #in quadgram dataset, get frequency "gramfreq" of preceding trigram for each word
@@ -23,6 +24,7 @@ bigrams2[,firstTerm:= pmax(N-0.5625,0)/gramfreq
                 ][, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)]
 
 capstone_ref_new <- rbindlist(list(quadgrams2,trigrams2,bigrams2), use.names=TRUE, fill=TRUE, idcol = TRUE)
+capstone_ref_new <- capstone_ref_new[N>=5,]
 
 wordpredict <- function(input) {
   wordsin <- str_split(str_trim(tolower(str_replace_all(input, "[^a-zA-Z ]", "")),"both"),"[[:punct:] ]+",simplify=TRUE)
@@ -47,5 +49,4 @@ wordpredict <- function(input) {
   return(result)
 }
 
-qplot(wordpredict("this should be")$word, wordpredict("this should be")$KNscore)
-
+object.size(capstone_ref_new)
