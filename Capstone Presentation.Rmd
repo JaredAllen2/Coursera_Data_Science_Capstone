@@ -17,7 +17,7 @@ The final product is an online shiny app which allows a user to enter a phrase a
 
 ## Model
 
-A Kneser-Ney smoothed scoring model was used (thanks to an excellent breakdown of the mathematics by Denny Ceccon on Medium.com<sup>1</sup>) to calculate a likelihood score for all potential subsequent words based on preceding trigram, bigram or unigram input. The equation used to calculate the likelihood score was:
+A Katz-Backoff algorithm with Kneser-Ney smoothed scoring was used (thanks to an excellent breakdown of the mathematics by Denny Ceccon on Medium.com<sup>1</sup>) to calculate a likelihood score for all potential subsequent words based on preceding trigram, bigram or unigram input. The equation used to calculate the likelihood score was:
 
 <img src = "https://miro.medium.com/max/621/1*pMttoEXAH_GS9d6AtkhF2g.png"></img>
 
