@@ -1,5 +1,7 @@
 library(shiny)
 library(tidyverse)
+library(data.table)
+library(wordcloud)
 
 
 shinyServer(function(input, output) {
@@ -27,12 +29,21 @@ shinyServer(function(input, output) {
         wordpredict(input$a)[3,1]
       }
     })
-  output$wordprob <-
+  output$wordprobcloud <-
     renderPlot({
       if (input$a == "") {
         NULL
       } else {
-      qplot(wordpredict(input$a)$word, wordpredict(input$a)$KNscore)
+      wordcloud(wordpredict(input$a)$word,wordpredict(input$a)$KNscore)
+      }
+    })
+  output$Wordprobgg <-
+    renderPlot({
+      if (input$a == "") {
+        NULL
+      } else {
+        ggplot(dplyr::top_n(wordpredict(input$a),5,KNscore),aes(x=reorder(word,-KNscore), y=KNscore)) +
+          geom_point()
       }
     })
 

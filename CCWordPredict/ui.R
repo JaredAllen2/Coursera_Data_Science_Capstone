@@ -13,6 +13,17 @@ shinyUI(fluidPage(
     ),
     fluidRow(
         column(2, offset = 1,
+               ("Suggestion 1:")
+        ),
+        column(2,
+               ("Suggestion 2:")
+        ),
+        column(2,
+               ("Suggestion 3:")
+        )
+    ),
+    fluidRow(
+        column(2, offset = 1,
                textOutput("b")
         ),
         column(2,
@@ -23,7 +34,11 @@ shinyUI(fluidPage(
         )
     ),
     fluidRow(
-        column(8, offset = 1,
-               plotOutput("wordprob"))
+        column(4, offset = 0,
+               plotOutput("wordprobgg")
+               ),
+        column(4,
+               plotOutput("Wordprobcloud")
+               )
     )
 ))
