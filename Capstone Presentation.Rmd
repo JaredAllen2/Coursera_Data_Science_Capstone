@@ -29,7 +29,7 @@ with a lambda value of 0 for the highest order n-gram (words following a trigram
 
 The strategy pursued for training of this model was to summarise the corpora into a dataframe of 1, 2, and 3 length n-grams along with all observed subsequent words, and the associated Kneser-Ney likelihood score.
 
-After calculation of likelihood scores, all words which occured 4 times or less in the corpora were removed to reduce the size of the final lookup table, resulting in a final reference table with 1,155,561 rows.
+After calculation of likelihood scores, all words which occured 5 times or less in the corpora were removed to reduce the size of the final lookup table, resulting in a final reference table with 920,115 rows.
 
 This reference table is then able to be searched for any given n-gram and return a list of all potential candidate words and their likelihood score.
 

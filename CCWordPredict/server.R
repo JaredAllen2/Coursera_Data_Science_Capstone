@@ -2,8 +2,9 @@ library(shiny)
 library(tidyverse)
 library(data.table)
 library(wordcloud)
+library(httr)
 
-capstone_ref_new <- read.csv()
+capstone_ref_new <- fread("https://raw.githubusercontent.com/JaredAllen2/Coursera_Data_Science_Capstone/master/capstone_ref_final.csv")
 
 wordpredict <- function(input) {
   wordsin <- str_split(str_trim(tolower(str_replace_all(input, "[^a-zA-Z ]", "")),"both"),"[[:punct:] ]+",simplify=TRUE)
