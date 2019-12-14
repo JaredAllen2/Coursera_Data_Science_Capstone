@@ -16,8 +16,8 @@ trigrams2[,firstTerm:= pmax(N-0.75,0)/gramfreq
                  ][, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)]            
 
 bigrams2 <- merge(bigrams,unigrams[, .(pword1, gramfreq = N)],by=c("pword1"),sort=FALSE)
-bigrams2[,firstTerm:= pmax(N-0.75,0)/gramfreq
-          ][,lambda:= 0.75/gramfreq
+bigrams2[,firstTerm:= pmax(N-0.5625,0)/gramfreq
+          ][,lambda:= 0.5625/gramfreq
             ][, pcontwn:=length(N),by=word
               ][, pcontwd:=length(N)
                 ][, KNscore:=(firstTerm+lambda)*(pcontwn/pcontwd)]
@@ -30,15 +30,15 @@ wordpredict <- function(input) {
   if (stringlength >=3) {
     suggestedwords1 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==wordsin[stringlength-2],c("word","KNscore")
                                         ][order(-KNscore),]
-  } else suggestedwords1 <- capstone_ref_new[0,c("word","KNscore")]
+  } else { suggestedwords1 <- capstone_ref_new[0,c("word","KNscore")] }
   if (nrow(suggestedwords1) <=5 | stringlength==2) {
-    suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==(NA_character_),c("word","KNscore")
+    suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & is.na(pword3),c("word","KNscore")
                                         ][order(-KNscore),][! word %in% suggestedwords1[,word],]
-  } else suggestedwords2 <- capstone_ref_new[0,c("word","KNscore")]
+  } else { suggestedwords2 <- capstone_ref_new[0,c("word","KNscore")] }
   if ((nrow(suggestedwords1)+nrow(suggestedwords2))<=5 | stringlength==1) {
-    suggestedwords3 <- capstone_ref_new[pword1==wordsin[stringlength],c("word","KNscore")
+    suggestedwords3 <- capstone_ref_new[pword1==wordsin[stringlength] & is.na(pword2),c("word","KNscore")
                                         ][order(-KNscore),][! word %in% suggestedwords1[,word],][! word %in% suggestedwords2[,word],]
-  } else suggestedwords3 <- capstone_ref_new[0,c("word","KNscore")]
+  } else { suggestedwords3 <- capstone_ref_new[0,c("word","KNscore")] }
   
   suggestedwords <- rbindlist(list(suggestedwords1,suggestedwords2,suggestedwords3),use.names=TRUE, fill=TRUE)
   
@@ -48,3 +48,61 @@ wordpredict <- function(input) {
 }
 
 qplot(wordpredict("this should be")$word, wordpredict("this should be")$KNscore)
+
+
+wordpredict2 <- function(input) {
+  wordsin <- str_split(str_trim(tolower(str_replace_all(input, "[^a-zA-Z ]", "")),"both"),"[[:punct:] ]+",simplify=TRUE)
+  stringlength <- length(wordsin)
+  
+  if (stringlength >=3) {
+    suggestedwords1 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==wordsin[stringlength-2],c("word","KNscore")
+                                        ][order(-KNscore),]
+  } else { suggestedwords1 <- capstone_ref_new[0,c("word","KNscore")] }
+  
+  if (stringlength >=2) {
+    suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==(NA_character_),c("word","KNscore")
+                                        ][order(-KNscore),]
+  } else { suggestedwords2 <- capstone_ref_new[0,c("word","KNscore")] }
+  
+  if (stringlength >=1) {
+    suggestedwords3 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==(NA_character_),c("word","KNscore")
+                                        ][order(-KNscore),]
+  } else { suggestedwords3 <- capstone_ref_new[0,c("word","KNscore")] }
+  
+  suggestedwords <- rbindlist(list(suggestedwords1,suggestedwords2,suggestedwords3),use.names=TRUE, fill=TRUE)
+  
+  result <- dplyr::top_n(suggestedwords,5,KNscore)
+  
+  return(result)
+}
+
+qplot(wordpredict2("this should be")$word, wordpredict2("this should be")$KNscore)
+
+wordpredict3 <- function(input) {
+  wordsin <- str_split(str_trim(tolower(str_replace_all(input, "[^a-zA-Z ]", "")),"both"),"[[:punct:] ]+",simplify=TRUE)
+  stringlength <- length(wordsin)
+  
+  ifelse(stringlength >=3,
+         suggestedwords1 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & pword3==wordsin[stringlength-2],c("word","KNscore")
+                                        ][order(-KNscore),], 
+         suggestedwords1 <- capstone_ref_new[0,c("word","KNscore")])
+  
+  ifelse(stringlength >=2,
+         suggestedwords2 <- capstone_ref_new[pword1==wordsin[stringlength] & pword2==wordsin[stringlength-1] & is.na(pword3),c("word","KNscore")
+                                        ][order(-KNscore),],
+         suggestedwords2 <- capstone_ref_new[0,c("word","KNscore")])
+  
+  ifelse(stringlength >=1,
+         suggestedwords3 <- capstone_ref_new[pword1==wordsin[stringlength] & is.na(pword2),c("word","KNscore")
+                                        ][order(-KNscore),],
+         suggestedwords3 <- capstone_ref_new[0,c("word","KNscore")])
+  
+  suggestedwords <- rbindlist(list(suggestedwords1,suggestedwords2,suggestedwords3),use.names=TRUE, fill=TRUE)
+  
+  result <- dplyr::top_n(suggestedwords,5,KNscore)
+  
+  return(result)
+}
+
+qplot(wordpredict3("this should be")$word, wordpredict3("this should be")$KNscore)
+
